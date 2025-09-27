@@ -33,7 +33,7 @@ internal class LlmLlamaCpp : Llm
             .Replace("{response_start}", responseStart);
     }
 
-    internal override async Task<LlmResponse> RunInference(string systemPromptString, string gameCacheString, string npcCacheString, string promptString, string responseStart = "",int n_predict = 2048,string cacheContext="")
+    internal override async Task<LlmResponse> RunInference(string systemPromptString, string gameCacheString, string npcCacheString, string promptString, string responseStart = "",int n_predict = 2048,string cacheContext="",bool allowRetry = true)
     {
 
         promptString = gameCacheString + npcCacheString + promptString;
@@ -121,7 +121,7 @@ internal class LlmLlamaCpp : Llm
             {
                 Log.Debug(ex.Message);
                 Log.Debug("Retrying...");
-                retry = true;
+                retry = allowRetry;
                 Thread.Sleep(1000);
             }
         }

@@ -44,7 +44,7 @@ internal class LlmVolcEngine : Llm, IGetModelNames
         return CoreGetModelNames();
     }
 
-    internal override async Task<LlmResponse> RunInference(string systemPromptString, string gameCacheString, string npcCacheString, string promptString, string responseStart = "",int n_predict = 2048,string cacheContext="")
+    internal override async Task<LlmResponse> RunInference(string systemPromptString, string gameCacheString, string npcCacheString, string promptString, string responseStart = "",int n_predict = 2048,string cacheContext="",bool allowRetry = true)
     {
         var inputString = JsonConvert.SerializeObject(new
             {
@@ -71,7 +71,7 @@ internal class LlmVolcEngine : Llm, IGetModelNames
         );
 
         // call out to URL passing the object as the body, and return the result
-        int retry = 3;
+        int retry = allowRetry ? 3 : 1;
         var fullUrl = $"{url}/chat/completions";
         
         // Check network availability on Android

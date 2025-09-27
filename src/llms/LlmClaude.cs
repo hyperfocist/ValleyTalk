@@ -39,7 +39,7 @@ internal class LlmClaude : Llm, IGetModelNames
 
     public override bool IsHighlySensoredModel => true;
 
-    internal override async Task<LlmResponse> RunInference(string systemPromptString, string gameCacheString, string npcCacheString, string promptString, string responseStart = "",int n_predict = 2048,string cacheContext="")
+    internal override async Task<LlmResponse> RunInference(string systemPromptString, string gameCacheString, string npcCacheString, string promptString, string responseStart = "",int n_predict = 2048,string cacheContext="",bool allowRetry = true)
     {
         var promptCached = gameCacheString;
         var inputString = JsonConvert.SerializeObject(new
@@ -76,7 +76,7 @@ internal class LlmClaude : Llm, IGetModelNames
         );
 
         // call out to URL passing the object as the body, and return the result
-        int retry = 3;
+        int retry = allowRetry ? 3 : 1;
         var fullUrl = url;
         
         // Check network availability on Android
