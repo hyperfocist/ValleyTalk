@@ -386,10 +386,10 @@ public class Character
         // Remove any line breaks
         resultLines = resultLines.Select(x => x.Replace("\n", "").Replace("\r", "").Trim());
         resultLines = resultLines.Where(x => !string.IsNullOrWhiteSpace(x));
-        // Find the first line that starts with '- ' and remove any lines before it
-        resultLines = resultLines.SkipWhile(x => !x.StartsWith("- "));
+        // Find the first line that starts with '-' and remove any lines before it
+        resultLines = resultLines.SkipWhile(x => !x.StartsWith("-"));
         var dialogueLine = resultLines.FirstOrDefault();
-        if (dialogueLine == null || !dialogueLine.StartsWith("- "))
+        if (dialogueLine == null || !dialogueLine.StartsWith("-"))
         {
             //Log.Debug("Invalid layout detected in AI response.  Returning the full response.");
             return Array.Empty<string>();
@@ -401,7 +401,7 @@ public class Character
             //Log.Debug("Empty dialogue line detected in AI response.  Returning nothing.");
             return Array.Empty<string>();
         }
-        var responseLines = resultLines.Skip(1).Where(x => x.StartsWith("% "));
+        var responseLines = resultLines.Skip(1).Where(x => x.StartsWith("%"));
         if (responseLines.Any())
         {
             responseLines = responseLines.Select(x => CommonCleanup(x));
