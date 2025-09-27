@@ -483,8 +483,59 @@ public class Character
         var elements = line.Split('#');
         if (elements.Any(x => x.Length > 200 && !relaxedValidation))
         {
-            //Log.Debug("Long line detected in AI response.  Returning nothing.");
-            return string.Empty;
+            // Iterate through the elements, building a new list that splits any element longer than 200 characters into multiple elements at a full stop
+            List<string> newElements = new();
+            foreach (var element in elements)
+            {
+                if (element.Length <= 200)
+                {
+                    newElements.Add(element);
+                }
+                else
+                {
+                    // Check if the element ends with a portrait indicator
+                    string remainder;
+                    string indicator;
+                    if (element.Length > 2 && element[^2] == '$' && ValidPortraits.Contains(element[^1].ToString()))
+                    {
+                        // Split the element into the main text and the indicator
+                        remainder = element[..^2];
+                        indicator = element[^2..];
+                    }
+                    else
+                    {
+                        indicator = "";
+                        remainder = element;
+                    }
+                    while (remainder.Length > 200 - indicator.Length)
+                    {
+                        var elementStart = remainder.Substring(0, 200 - indicator.Length);
+                        var lastPeriod = elementStart.LastIndexOfAny(new char[] { '.', '!', '?' });
+                        if (lastPeriod != -1)
+                        {
+                            newElements.Add(remainder.Substring(0, lastPeriod + 1) + indicator);
+                            remainder = remainder.Substring(lastPeriod + 1).Trim();
+                        }
+                        else
+                        {
+                            // If there is no full stop, just add the first 200 characters and continue
+                            newElements.Add(remainder.Substring(0, 200 - indicator.Length) + indicator);
+                            remainder = string.Empty;
+                        }
+                    }
+                    if (remainder.Length > 0)
+                    {
+                        newElements.Add(remainder + indicator);
+                    }
+                }
+            }
+
+            if (newElements.Any(x => x.Length > 200 && !relaxedValidation))
+            {
+                //Log.Debug("Excessively long element detected in AI response.  Returning nothing.");
+                return string.Empty;
+            }
+            elements = newElements.ToArray();
         }
         if (ModEntry.FixPunctuation)
         {
