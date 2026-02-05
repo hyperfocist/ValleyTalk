@@ -484,3 +484,6 @@ $RECYCLE.BIN/
 *.swp
 translations/*.zip
 Extensions/*.zip
+
+# Local modding overrides
+Directory.Build.targets
