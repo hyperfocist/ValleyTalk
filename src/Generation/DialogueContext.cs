@@ -10,6 +10,7 @@ using ValleyTalk;
 
 namespace ValleyTalk;
 
+
 public class DialogueContext
 {
     private static readonly string[] singles = new string[] { "Emily", "Haley", "Maru", "Penny", "Sam", "Sebastian", "Shane", "Abigail", "Elliott", "Harvey", "Leah", "Alex", "Krobus" };
@@ -137,142 +138,172 @@ public class DialogueContext
     }
 
     public DialogueContext(string value)
-    {
-        Value = value;
-        elements = value.Split('_');
+{
+    //System.Console.WriteLine($"[VT-DEBUG] DialogueContext input: '{value}'");
+    Value = value;
+    elements = value.Split('_');
+    //System.Console.WriteLine($"[VT-DEBUG] Split into {elements.Length} parts: [{string.Join(", ", elements)}]");
 
-        // Delete any empty elements from the start
-        while (elements.Length > 0 && elements[0] == "")
+    // Delete any empty elements from the start
+    while (elements.Length > 0 && elements[0] == "")
+    {
+        elements = elements.Skip(1).ToArray();
+    }
+    
+    // ADD SAFETY CHECK
+    if (elements.Length == 0)
+    {
+        //System.Console.WriteLine($"[VT-DEBUG] No elements after cleanup, returning early");
+        return;
+    }
+    
+    // If the first element in an M then set the context to married, and remove it from the list
+    if (elements[0] == "M")
+    {
+        Married = true;
+        elements = elements.Skip(1).ToArray();
+    }
+    if (elements.Length > 0 && elements[0] == "B")
+    {
+        Birthday = true;
+        elements = elements.Skip(1).ToArray();
+    }
+    
+    // ADD SAFETY CHECK
+    if (elements.Length == 0) return;
+    
+    // Check if the first element is a season.  If so, set the season and remove it from the list
+    if (!int.TryParse(elements[0], out _) && Enum.TryParse<Season>(elements[0], true, out Season season))
+    {
+        Season = season;
+        elements = elements.Skip(1).ToArray();
+    }
+    if (elements.Length == 0) return;
+    
+    // Check if the first element is a valid GUID. If so, set the chat ID and remove it from the list
+    if (Guid.TryParse(elements[0], out _))
+    {
+        ChatID = $"{elements[0]}_{elements[1]}";
+        elements = elements.Skip(2).ToArray();
+    }
+    else if (locations.Any(x => value.StartsWith(x, StringComparison.OrdinalIgnoreCase)))
+    {
+        Location = locations.First(x => value.StartsWith(x, StringComparison.OrdinalIgnoreCase));
+        var rest = value.Substring(Location.Length);
+        if (int.TryParse(rest, out var hearts))
         {
-            elements = elements.Skip(1).ToArray();
+            Hearts = hearts;
         }
-        // If the first element in an M then set the context to married, and remove it from the list
-        if (elements[0] == "M")
+        else
         {
-            Married = true;
-            elements = elements.Skip(1).ToArray();
+            Hearts = 0;
         }
-        if (elements[0] == "B")
+        elements = elements.Skip(1).ToArray();
+    }
+    else if (specialContexts.Any(x => value.StartsWith(x, StringComparison.OrdinalIgnoreCase)) && !value.Contains("_Day") && !value.Contains("_Night"))
+    {
+        ChatID = specialContexts.First(x => value.StartsWith(x, StringComparison.OrdinalIgnoreCase));
+        var rest = value.Substring(ChatID.Length);
+        if (int.TryParse(rest, out var hearts))
         {
-            Birthday = true;
-            elements = elements.Skip(1).ToArray();
+            Hearts = hearts;
         }
-        // Check if the first element is a season.  If so, set the season and remove it from the list
-        if (!int.TryParse(elements[0], out _) && Enum.TryParse<Season>(elements[0], true, out Season season))
+        else
         {
-            Season = season;
-            elements = elements.Skip(1).ToArray();
+            Hearts = 0;
         }
-        if (elements.Length == 0) return;
-        // Check if the first element is a valid GUID. If so, set the chat ID and remove it from the list
-        if (Guid.TryParse(elements[0], out _))
+        elements = elements.Skip(1).ToArray();
+    }
+    // Check if the first element is a day of the week followed by a number.  If so, set the day and use the number as a heart level.
+    else if (elements.Length > 0 && elements[0].Length >= 3 && Enum.TryParse<Weekday>(elements[0].Substring(0, 3), true, out var day))
+    {
+        Day = day;
+        if (elements[0].Length > 3)
         {
-            ChatID = $"{elements[0]}_{elements[1]}";
-            elements = elements.Skip(2).ToArray();
+            Hearts = int.Parse(elements[0].Substring(3));
         }
-        else if (locations.Any(x => value.StartsWith(x, StringComparison.OrdinalIgnoreCase)))
+        else
         {
-            Location = locations.First(x => value.StartsWith(x, StringComparison.OrdinalIgnoreCase));
-            var rest = value.Substring(Location.Length);
-            if (int.TryParse(rest, out var hearts))
-            {
-                Hearts = hearts;
-            }
-            else
-            {
-                Hearts = 0;
-            }
-            elements = elements.Skip(1).ToArray();
+            Hearts = 0;
         }
-        else if (specialContexts.Any(x => value.StartsWith(x, StringComparison.OrdinalIgnoreCase)) && !value.Contains("_Day") && !value.Contains("_Night"))
+        elements = elements.Skip(1).ToArray();
+    }
+    else if (elements.Length > 0 && int.TryParse(elements[0], out var dayOfSeason))
+    {
+        DayOfSeason = dayOfSeason;
+        elements = elements.Skip(1).ToArray();
+    }
+    else if (elements.Length > 0 && elements[0].StartsWith("Accept", StringComparison.OrdinalIgnoreCase))
+    {
+        // ADD SAFETY CHECK for elements[1]
+        if (elements.Length > 1)
         {
-            ChatID = specialContexts.First(x => value.StartsWith(x, StringComparison.OrdinalIgnoreCase));
-            var rest = value.Substring(ChatID.Length);
-            if (int.TryParse(rest, out var hearts))
-            {
-                Hearts = hearts;
-            }
-            else
-            {
-                Hearts = 0;
-            }
-            elements = elements.Skip(1).ToArray();
-        }
-        // Check if the first element is a day of the week followed by a number.  If so, set the day and use the number as a heart level.
-        else if (elements[0].Length >= 3 && Enum.TryParse<Weekday>(elements[0].Substring(0, 3), true, out var day))
-        {
-            Day = day;
-            if (elements[0].Length > 3)
-            {
-                Hearts = int.Parse(elements[0].Substring(3));
-            }
-            else
-            {
-                Hearts = 0;
-            }
-            elements = elements.Skip(1).ToArray();
-        }
-        else if (int.TryParse(elements[0], out var dayOfSeason))
-        {
-            DayOfSeason = dayOfSeason;
-            elements = elements.Skip(1).ToArray();
-        }
-        else if (elements[0].StartsWith("Accept", StringComparison.OrdinalIgnoreCase))
-        {
-            // If element 1 starts with (O) then remove it
             var gift = elements[1];
             while (gift.StartsWith("(O)"))
             {
                 gift = gift.Substring(3);
             }
-
             //Accept = gift;
-            elements = elements.Skip(2).ToArray();
-        }
-        else if (elements.Length >= 1 && Enum.TryParse<RandomAction>(elements[0], true, out var randomAction))
-        {
-            RandomAct = randomAction;
-            if ((randomAction == RandomAction.Rainy || randomAction == RandomAction.Indoor) && elements.Length >= 2)
-            {
-                TimeOfDay = elements[1];
-                elements = elements.Skip(2).ToArray();
-            }
-            else
-            {
-                elements = elements.Skip(1).ToArray();
-            }
-            if (elements.Length > 0 && int.TryParse(elements[0], out var randomValue))
-            {
-                RandomValue = randomValue;
-                elements = elements.Skip(1).ToArray();
-            }
-        }
-        else if (elements.Length >= 2 && Enum.TryParse<SpouseAction>(elements[0], true, out var spouseAction))
-        {
-            SpouseAct = spouseAction;
-            Spouse = elements[1];
             elements = elements.Skip(2).ToArray();
         }
         else
         {
-            ChatID = value;
-            elements = Array.Empty<string>();
-        }
-        if (elements.Length == 0) return;
-        // If the first element is a number, set the year and remove it from the list
-        if (int.TryParse(elements[0], out var year))
-        {
-            Year = year;
             elements = elements.Skip(1).ToArray();
         }
-
-        // If there are two or more remaining elements, check if the next element says "inlaw" and if so put the following element in the inlaw parameter.
-        if (elements.Length >= 2 && elements[0] == "inlaw")
+    }
+    else if (elements.Length >= 1 && Enum.TryParse<RandomAction>(elements[0], true, out var randomAction))
+    {
+        //System.Console.WriteLine($"[VT-DEBUG] Matched RandomAction: {randomAction}, elements.Length: {elements.Length}");
+        RandomAct = randomAction;
+        if ((randomAction == RandomAction.Rainy || randomAction == RandomAction.Indoor) && elements.Length >= 2)
         {
-            Inlaw = elements[1];
+            //System.Console.WriteLine($"[VT-DEBUG] Setting TimeOfDay to: {elements[1]}");
+            TimeOfDay = elements[1];
             elements = elements.Skip(2).ToArray();
         }
+        else
+        {
+            elements = elements.Skip(1).ToArray();
+        }
+        
+        //System.Console.WriteLine($"[VT-DEBUG] After RandomAction processing, elements.Length: {elements.Length}");
+        
+        if (elements.Length > 0 && int.TryParse(elements[0], out var randomValue))
+        {
+            RandomValue = randomValue;
+            elements = elements.Skip(1).ToArray();
+        }
     }
+    else if (elements.Length >= 2 && Enum.TryParse<SpouseAction>(elements[0], true, out var spouseAction))
+    {
+        SpouseAct = spouseAction;
+        Spouse = elements[1];
+        elements = elements.Skip(2).ToArray();
+    }
+    else
+    {
+        //System.Console.WriteLine($"[VT-DEBUG] No pattern matched, setting ChatID to full value");
+        ChatID = value;
+        elements = Array.Empty<string>();
+    }
+    if (elements.Length == 0) return;
+    
+    // If the first element is a number, set the year and remove it from the list
+    if (int.TryParse(elements[0], out var year))
+    {
+        Year = year;
+        elements = elements.Skip(1).ToArray();
+    }
+
+    // If there are two or more remaining elements, check if the next element says "inlaw" and if so put the following element in the inlaw parameter.
+    if (elements.Length >= 2 && elements[0] == "inlaw")
+    {
+        Inlaw = elements[1];
+        elements = elements.Skip(2).ToArray();
+    }
+    
+    //System.Console.WriteLine($"[VT-DEBUG] DialogueContext parsing complete");
+}
 
     public DialogueContext(DialogueContext context)
     {

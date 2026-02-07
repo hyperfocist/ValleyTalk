@@ -9,6 +9,7 @@ namespace ValleyTalk
 {
     public partial class ModEntry : Mod
     {
+        public static ModEntry Instance { get; private set; }
         public static IMonitor SMonitor;
         public static IModHelper SHelper { get; private set; }
         public static ModConfig Config;
@@ -114,6 +115,8 @@ namespace ValleyTalk
 
         public override void Entry(IModHelper helper)
         {
+            Instance = this;
+            
             SHelper = helper;
 
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;

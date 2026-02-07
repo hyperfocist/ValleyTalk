@@ -167,8 +167,10 @@ public class Character
         DialogueData = new();
         foreach (var dialogue in canonDialogue)
         {
+            
             var context = new DialogueContext(dialogue.Key);
             var value = new DialogueValue(dialogue.Value);
+            //ModEntry.Instance.Monitor.Log($"[DEBUG] LoadDialogue - About to create DialogueContext with: '{value}'", StardewModdingAPI.LogLevel.Debug);
             if (value is DialogueValue)
             {
                 DialogueData.Add("Base",context, value);
@@ -223,6 +225,7 @@ public class Character
         _sampleCacheDay = context.DayOfSeason;
         _sampleCacheHeartLevel = context.Hearts;
         // Pick 20 most relevant dialogue entries
+        //ModEntry.Instance.Monitor.Log($"[DEBUG] SelectDialogueSample - context key: '{context?.ToString() ?? "null"}'", StardewModdingAPI.LogLevel.Debug);
         var orderedDialogue = DialogueData
                     ?.AllEntries
                    .OrderBy(x => context.CompareTo(x.Key));
