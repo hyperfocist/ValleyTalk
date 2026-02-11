@@ -29,6 +29,8 @@ internal abstract class LlmOpenAiBase : Llm
             {
                 model = modelName,
                 max_tokens = n_predict,
+                temperature = 1,
+                top_p = 0.75,
                 messages = new PromptElement[]
                 { 
                     new()
